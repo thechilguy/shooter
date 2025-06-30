@@ -5,22 +5,34 @@ import Hero from "./Hero";
 import BulletContainer from "./BulletContainer";
 import EnemyField from "./EnemyField";
 
+interface Bullet {
+  x: number;
+  y: number;
+}
+
+interface Enemy {
+  x: number;
+  y: number;
+  boom: boolean;
+  boomTime?: number;
+}
+
 function App() {
   const [heroX, setHeroX] = useState(0);
-  const [bullets, setBullets] = useState([]);
-  const [enemies, setEnemies] = useState([]);
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
   const [shootDelay, setShootDelay] = useState(200);
   const [enemySpeed, setEnemySpeed] = useState(2);
+  const [bullets, setBullets] = useState<Bullet[]>([]);
+  const [enemies, setEnemies] = useState<Enemy[]>([]);
 
-  const containerRef = useRef(null);
-  const heroRef = useRef(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLDivElement>(null);
 
   const isDragging = useRef(false);
   const isShooting = useRef(false);
-  const shootInterval = useRef(null);
-  const cleanupInterval = useRef(null);
+  const shootInterval = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cleanupInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const startX = useRef(0);
   const startLeft = useRef(0);
 
@@ -42,6 +54,7 @@ function App() {
     }, 10);
 
     const spawnInterval = setInterval(() => {
+      if (!containerRef.current) return;
       const containerWidth = containerRef.current.offsetWidth;
       const x = Math.random() * (containerWidth - 50);
       setEnemies((prev) => [...prev, { x, y: -50, boom: false }]);
@@ -50,7 +63,14 @@ function App() {
     cleanupInterval.current = setInterval(() => {
       const now = Date.now();
       setEnemies((prev) =>
-        prev.filter((enemy) => !(enemy.boom && now - enemy.boomTime > 300))
+        prev.filter(
+          (enemy) =>
+            !(
+              enemy.boom &&
+              enemy.boomTime !== undefined &&
+              now - enemy.boomTime > 300
+            )
+        )
       );
     }, 100);
 
@@ -58,13 +78,13 @@ function App() {
       clearInterval(bulletInterval);
       clearInterval(enemyInterval);
       clearInterval(spawnInterval);
-      clearInterval(cleanupInterval.current);
+      if (cleanupInterval.current) clearInterval(cleanupInterval.current);
     };
   }, [gameOver, enemySpeed]);
 
   useEffect(() => {
     const newEnemies = [...enemies];
-    const hits = new Set();
+    const hits = new Set<number>();
 
     bullets.forEach((b) => {
       newEnemies.forEach((enemy, idx) => {
@@ -116,7 +136,8 @@ function App() {
   }, [enemies, gameOver]);
 
   useEffect(() => {
-    const handleMove = (clientX) => {
+    const handleMove = (clientX: number) => {
+      if (!containerRef.current || !heroRef.current) return;
       const deltaX = clientX - startX.current;
       const newPos = startLeft.current + deltaX;
 
@@ -129,10 +150,10 @@ function App() {
       setHeroX(Math.max(minX, Math.min(maxX, newPos)));
     };
 
-    const handleMouseMove = (e) => {
+    const handleMouseMove = (e: MouseEvent) => {
       if (isDragging.current) handleMove(e.clientX);
     };
-    const handleTouchMove = (e) => {
+    const handleTouchMove = (e: TouchEvent) => {
       if (isDragging.current) handleMove(e.touches[0].clientX);
     };
     const stopDrag = () => {
@@ -153,9 +174,11 @@ function App() {
     };
   }, []);
 
-  const startDrag = (e) => {
+  const startDrag = (
+    e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>
+  ) => {
     isDragging.current = true;
-    startX.current = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
+    startX.current = "touches" in e ? e.touches[0].clientX : e.clientX;
     startLeft.current = heroX;
   };
 
@@ -164,7 +187,8 @@ function App() {
     isShooting.current = true;
 
     shootInterval.current = setInterval(() => {
-      if (!isShooting.current) return;
+      if (!isShooting.current || !heroRef.current || !containerRef.current)
+        return;
       const heroRect = heroRef.current.getBoundingClientRect();
       const containerRect = containerRef.current.getBoundingClientRect();
       const x = heroRect.left + heroRect.width / 2 - containerRect.left - 6;
@@ -175,7 +199,7 @@ function App() {
 
   const stopShooting = () => {
     isShooting.current = false;
-    clearInterval(shootInterval.current);
+    if (shootInterval.current) clearInterval(shootInterval.current);
     shootInterval.current = null;
   };
 

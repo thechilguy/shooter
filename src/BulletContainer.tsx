@@ -1,6 +1,14 @@
-import React from "react";
+interface Bullet {
+  x: number;
+  y: number;
+}
 
-function BulletContainer({ bullets, bulletImg }) {
+interface BulletContainerProps {
+  bullets: Bullet[];
+  bulletImg: string;
+}
+
+function BulletContainer({ bullets, bulletImg }: BulletContainerProps) {
   return (
     <div className="bullet_container">
       {bullets.map((b, i) => (

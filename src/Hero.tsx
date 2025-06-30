@@ -1,13 +1,21 @@
 import React, { forwardRef } from "react";
-import hero from "./assets/hero.png";
+import heroImg from "./assets/hero.png";
 
-const Hero = forwardRef(
+interface HeroProps {
+  heroX: number;
+  onStartDrag: (
+    e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>
+  ) => void;
+  onStartShooting: () => void;
+  onStopShooting: () => void;
+}
+
+const Hero = forwardRef<HTMLDivElement, HeroProps>(
   ({ heroX, onStartDrag, onStartShooting, onStopShooting }, ref) => {
     return (
       <div
-        className="hero"
         ref={ref}
-        style={{ transform: `translateX(${heroX}px)` }}
+        className="hero"
         onMouseDown={(e) => {
           onStartDrag(e);
           onStartShooting();
@@ -17,10 +25,10 @@ const Hero = forwardRef(
           onStartShooting();
         }}
         onMouseUp={onStopShooting}
-        onMouseLeave={onStopShooting}
         onTouchEnd={onStopShooting}
+        style={{ transform: `translateX(${heroX}px)` }}
       >
-        <img src={hero} alt="hero" />
+        <img src={heroImg} alt="hero" />
       </div>
     );
   }

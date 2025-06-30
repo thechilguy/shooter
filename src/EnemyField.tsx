@@ -1,8 +1,18 @@
-import React from "react";
 import enemy from "./assets/enemy.png";
 import boom from "./assets/boom.png";
 
-function EnemyField({ enemies }) {
+interface Enemy {
+  x: number;
+  y: number;
+  boom: boolean;
+  boomTime?: number;
+}
+
+interface EnemyFieldProps {
+  enemies: Enemy[];
+}
+
+function EnemyField({ enemies }: EnemyFieldProps) {
   return (
     <>
       {enemies.map((enemyPos, i) => (
