@@ -26,6 +26,14 @@ body {
     height: auto;
   }
 }
+.enemySprite {
+  position: absolute;
+  width: 90px;
+  height: auto;
+  z-index: 2;
+  pointer-events: none;
+  user-select: none;
+}
 .hero {
   margin-top: auto;
   img {

@@ -1,12 +1,14 @@
 import "./App.css";
 import { useState, useRef, useEffect } from "react";
-import enemy from "./assets/enemy.png";
-import hero from "./assets/hero.png";
 import bulletImg from "./assets/bullet.png";
+import Hero from "./Hero";
+import BulletContainer from "./BulletContainer";
+import EnemyField from "./EnemyField";
 
 function App() {
   const [heroX, setHeroX] = useState(0);
   const [bullets, setBullets] = useState([]);
+  const [enemies, setEnemies] = useState([]);
   const containerRef = useRef(null);
   const heroRef = useRef(null);
 
@@ -16,18 +18,50 @@ function App() {
   const startX = useRef(0);
   const startLeft = useRef(0);
 
-  // 🔁 Bullet movement
   useEffect(() => {
-    const interval = setInterval(() => {
+    const bulletInterval = setInterval(() => {
       setBullets((prev) =>
         prev.map((b) => ({ ...b, y: b.y - 10 })).filter((b) => b.y > -20)
       );
     }, 30);
 
-    return () => clearInterval(interval);
+    const enemyInterval = setInterval(() => {
+      setEnemies((prev) =>
+        prev
+          .map((e) => ({ ...e, y: e.y + 2 }))
+          .filter((e) => e.y < window.innerHeight)
+      );
+    }, 30);
+
+    const spawnInterval = setInterval(() => {
+      const containerWidth = containerRef.current.offsetWidth;
+      const x = Math.random() * (containerWidth - 50);
+      setEnemies((prev) => [...prev, { x, y: -50 }]);
+    }, 1500);
+
+    return () => {
+      clearInterval(bulletInterval);
+      clearInterval(enemyInterval);
+      clearInterval(spawnInterval);
+    };
   }, []);
 
-  // 🖱️ Mouse/touch movement
+  // 🔥 Колізії: куля влучила у ворога
+  useEffect(() => {
+    setEnemies((prevEnemies) =>
+      prevEnemies.filter((enemy) => {
+        const hit = bullets.some(
+          (b) =>
+            b.x >= enemy.x &&
+            b.x <= enemy.x + 50 &&
+            b.y >= enemy.y &&
+            b.y <= enemy.y + 50
+        );
+        return !hit;
+      })
+    );
+  }, [bullets]);
+
   useEffect(() => {
     const handleMove = (clientX) => {
       const deltaX = clientX - startX.current;
@@ -45,11 +79,9 @@ function App() {
     const handleMouseMove = (e) => {
       if (isDragging.current) handleMove(e.clientX);
     };
-
     const handleTouchMove = (e) => {
       if (isDragging.current) handleMove(e.touches[0].clientX);
     };
-
     const stopDrag = () => {
       isDragging.current = false;
       stopShooting();
@@ -80,12 +112,10 @@ function App() {
 
     shootInterval.current = setInterval(() => {
       if (!isShooting.current) return;
-
       const heroRect = heroRef.current.getBoundingClientRect();
       const containerRect = containerRef.current.getBoundingClientRect();
-      const x = heroRect.left + heroRect.width / 2 - containerRect.left - 6; // 6 — половина ширини кулі
+      const x = heroRect.left + heroRect.width / 2 - containerRect.left - 6;
       const y = heroRect.top - containerRect.top;
-
       setBullets((prev) => [...prev, { x, y }]);
     }, 200);
   };
@@ -98,42 +128,15 @@ function App() {
 
   return (
     <div className="container" ref={containerRef}>
-      <div className="enemy">
-        <img src={enemy} alt="enemy" />
-      </div>
-
-      {/* Кулі */}
-      <div className="bullet_container">
-        {bullets.map((b, i) => (
-          <img
-            key={i}
-            src={bulletImg}
-            alt="bullet"
-            className="bullet"
-            style={{ left: b.x, top: b.y }}
-          />
-        ))}
-      </div>
-
-      {/* Герой */}
-      <div
-        className="hero"
+      <EnemyField enemies={enemies} />
+      <BulletContainer bullets={bullets} bulletImg={bulletImg} />
+      <Hero
         ref={heroRef}
-        style={{ transform: `translateX(${heroX}px)` }}
-        onMouseDown={(e) => {
-          startDrag(e);
-          startShooting();
-        }}
-        onTouchStart={(e) => {
-          startDrag(e);
-          startShooting();
-        }}
-        onMouseUp={stopShooting}
-        onMouseLeave={stopShooting}
-        onTouchEnd={stopShooting}
-      >
-        <img src={hero} alt="hero" />
-      </div>
+        heroX={heroX}
+        onStartDrag={startDrag}
+        onStartShooting={startShooting}
+        onStopShooting={stopShooting}
+      />
     </div>
   );
 }
