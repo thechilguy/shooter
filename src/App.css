@@ -59,3 +59,63 @@ body {
   user-select: none;
   pointer-events: none;
 }
+.game-over {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #111;
+  color: #fff;
+  font-family: "Press Start 2P", monospace;
+  font-size: 12px;
+  text-align: center;
+  padding: 20px 30px;
+  border: 3px solid #fff;
+  box-shadow: 0 0 12px #fff;
+  animation: pop-in 0.4s ease-out;
+  z-index: 999;
+}
+
+.game-over p {
+  margin: 0.5em 0;
+}
+
+.game-over button {
+  margin-top: 1em;
+  background: transparent;
+  color: #fff;
+  font-family: "Press Start 2P", monospace;
+  border: 2px solid #fff;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.game-over button:hover {
+  background: #fff;
+  color: #000;
+}
+
+@keyframes pop-in {
+  0% {
+    transform: translate(-50%, -60%) scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+}
+
+.score {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  font-family: "Press Start 2P", monospace;
+  font-size: 12px;
+  color: white;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 6px 10px;
+  border: 1px solid white;
+  z-index: 1000;
+}

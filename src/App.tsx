@@ -9,58 +9,109 @@ function App() {
   const [heroX, setHeroX] = useState(0);
   const [bullets, setBullets] = useState([]);
   const [enemies, setEnemies] = useState([]);
+  const [gameOver, setGameOver] = useState(false);
+  const [score, setScore] = useState(0);
+
   const containerRef = useRef(null);
   const heroRef = useRef(null);
 
   const isDragging = useRef(false);
   const isShooting = useRef(false);
   const shootInterval = useRef(null);
+  const cleanupInterval = useRef(null);
   const startX = useRef(0);
   const startLeft = useRef(0);
 
   useEffect(() => {
+    if (gameOver) return;
+
     const bulletInterval = setInterval(() => {
       setBullets((prev) =>
-        prev.map((b) => ({ ...b, y: b.y - 10 })).filter((b) => b.y > -20)
+        prev.map((b) => ({ ...b, y: b.y - 30 })).filter((b) => b.y > -20)
       );
-    }, 30);
+    }, 10);
 
     const enemyInterval = setInterval(() => {
       setEnemies((prev) =>
         prev
-          .map((e) => ({ ...e, y: e.y + 2 }))
+          .map((e) => (e.boom ? e : { ...e, y: e.y + 2 }))
           .filter((e) => e.y < window.innerHeight)
       );
-    }, 30);
+    }, 10);
 
     const spawnInterval = setInterval(() => {
       const containerWidth = containerRef.current.offsetWidth;
       const x = Math.random() * (containerWidth - 50);
-      setEnemies((prev) => [...prev, { x, y: -50 }]);
-    }, 1500);
+      setEnemies((prev) => [...prev, { x, y: -50, boom: false }]);
+    }, 500);
+
+    cleanupInterval.current = setInterval(() => {
+      const now = Date.now();
+      setEnemies((prev) =>
+        prev.filter((enemy) => !(enemy.boom && now - enemy.boomTime > 300))
+      );
+    }, 100);
 
     return () => {
       clearInterval(bulletInterval);
       clearInterval(enemyInterval);
       clearInterval(spawnInterval);
+      clearInterval(cleanupInterval.current);
     };
-  }, []);
+  }, [gameOver]);
 
-  // 🔥 Колізії: куля влучила у ворога
   useEffect(() => {
-    setEnemies((prevEnemies) =>
-      prevEnemies.filter((enemy) => {
-        const hit = bullets.some(
-          (b) =>
-            b.x >= enemy.x &&
-            b.x <= enemy.x + 50 &&
-            b.y >= enemy.y &&
-            b.y <= enemy.y + 50
-        );
-        return !hit;
-      })
-    );
+    const newEnemies = [...enemies];
+    const hits = new Set();
+
+    bullets.forEach((b) => {
+      newEnemies.forEach((enemy, idx) => {
+        const isHit =
+          b.x >= enemy.x &&
+          b.x <= enemy.x + 50 &&
+          b.y >= enemy.y &&
+          b.y <= enemy.y + 50;
+        if (isHit && !enemy.boom) {
+          newEnemies[idx] = { ...enemy, boom: true, boomTime: Date.now() };
+          hits.add(idx);
+        }
+      });
+    });
+
+    if (hits.size > 0) {
+      setScore((prev) => prev + hits.size);
+      setEnemies(newEnemies);
+    }
   }, [bullets]);
+
+  useEffect(() => {
+    if (!heroRef.current || gameOver) return;
+    const heroRect = heroRef.current.getBoundingClientRect();
+
+    enemies.forEach((enemy) => {
+      const enemyRect = {
+        left: enemy.x,
+        right: enemy.x + 50,
+        top: enemy.y,
+        bottom: enemy.y + 50,
+      };
+
+      const heroLeft = heroRect.left;
+      const heroRight = heroRect.right;
+      const heroTop = heroRect.top;
+      const heroBottom = heroRect.bottom;
+
+      const isColliding =
+        heroLeft < enemyRect.right &&
+        heroRight > enemyRect.left &&
+        heroTop < enemyRect.bottom &&
+        heroBottom > enemyRect.top;
+
+      if (isColliding) {
+        setGameOver(true);
+      }
+    });
+  }, [enemies, gameOver]);
 
   useEffect(() => {
     const handleMove = (clientX) => {
@@ -107,7 +158,7 @@ function App() {
   };
 
   const startShooting = () => {
-    if (shootInterval.current) return;
+    if (shootInterval.current || gameOver) return;
     isShooting.current = true;
 
     shootInterval.current = setInterval(() => {
@@ -126,8 +177,28 @@ function App() {
     shootInterval.current = null;
   };
 
+  const handleRestart = () => {
+    setGameOver(false);
+    setBullets([]);
+    setEnemies([]);
+    setScore(0);
+    setHeroX(0);
+  };
+
   return (
-    <div className="container" ref={containerRef}>
+    <div
+      className="container"
+      ref={containerRef}
+      style={{ overflow: "hidden" }}
+    >
+      <div className="score">Score: {score}</div>
+      {gameOver && (
+        <div className="game-over">
+          <p>Game Over</p>
+          <p>Score: {score}</p>
+          <button onClick={handleRestart}>Try Again</button>
+        </div>
+      )}
       <EnemyField enemies={enemies} />
       <BulletContainer bullets={bullets} bulletImg={bulletImg} />
       <Hero
