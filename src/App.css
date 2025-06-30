@@ -1,8 +1,9 @@
+html,
 body {
   margin: 0;
   padding: 0;
-  font-family: "Roboto", sans-serif;
-  background-color: #f0f0f0; /* Змінено на світліший колір */
+  overflow: hidden; /* ⬅️ це ключ до того, щоб скроли не з’являлись */
+  height: 100%;
 }
 .container {
   display: flex;
@@ -16,7 +17,7 @@ body {
   background-size: cover;
   background-repeat: no-repeat;
   background-position: center;
-  overflow-y: auto;
+  overflow-y: hidden;
   overflow-x: hidden;
   margin: 0 auto;
 }

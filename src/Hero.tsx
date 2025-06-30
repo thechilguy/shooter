@@ -26,7 +26,12 @@ const Hero = forwardRef<HTMLDivElement, HeroProps>(
         }}
         onMouseUp={onStopShooting}
         onTouchEnd={onStopShooting}
-        style={{ transform: `translateX(${heroX}px)` }}
+        style={{
+          position: "absolute",
+          bottom: "20px",
+          left: `calc(50% + ${heroX}px)`,
+          transform: "translateX(-50%)",
+        }}
       >
         <img src={heroImg} alt="hero" />
       </div>
