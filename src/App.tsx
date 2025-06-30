@@ -11,6 +11,8 @@ function App() {
   const [enemies, setEnemies] = useState([]);
   const [gameOver, setGameOver] = useState(false);
   const [score, setScore] = useState(0);
+  const [shootDelay, setShootDelay] = useState(200);
+  const [enemySpeed, setEnemySpeed] = useState(2);
 
   const containerRef = useRef(null);
   const heroRef = useRef(null);
@@ -34,7 +36,7 @@ function App() {
     const enemyInterval = setInterval(() => {
       setEnemies((prev) =>
         prev
-          .map((e) => (e.boom ? e : { ...e, y: e.y + 2 }))
+          .map((e) => (e.boom ? e : { ...e, y: e.y + enemySpeed }))
           .filter((e) => e.y < window.innerHeight)
       );
     }, 10);
@@ -58,7 +60,7 @@ function App() {
       clearInterval(spawnInterval);
       clearInterval(cleanupInterval.current);
     };
-  }, [gameOver]);
+  }, [gameOver, enemySpeed]);
 
   useEffect(() => {
     const newEnemies = [...enemies];
@@ -168,7 +170,7 @@ function App() {
       const x = heroRect.left + heroRect.width / 2 - containerRect.left - 6;
       const y = heroRect.top - containerRect.top;
       setBullets((prev) => [...prev, { x, y }]);
-    }, 200);
+    }, shootDelay);
   };
 
   const stopShooting = () => {
@@ -183,7 +185,15 @@ function App() {
     setEnemies([]);
     setScore(0);
     setHeroX(0);
+    setShootDelay(200);
+    setEnemySpeed(2);
   };
+
+  useEffect(() => {
+    const level = Math.floor(score / 5);
+    setShootDelay(Math.max(80, 200 - level * 10));
+    setEnemySpeed(2 + level * 0.5);
+  }, [score]);
 
   return (
     <div
